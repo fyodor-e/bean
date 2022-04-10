@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   bean.h
  * Author: fedor
  *
@@ -19,7 +19,6 @@ extern "C" {
 typedef enum {
     BEAN_NO_TR,
     BEAN_TR_SOF,       // We are just got SOF and some part of ML.
-//#define BEAN_ERR_NO_SOF         0x11
     BEAN_TR_MLINPR,
     BEAN_TR_ML,       // We are getting ML
     BEAN_TR_DSTID,
@@ -47,14 +46,36 @@ typedef struct {
     unsigned char recBytesCount;
     // Transfer state
     BeanTransferState recBeanState;
-    
+
     // Do we await staffing bit next?
     unsigned char recIsNextBitStaffing : 1;
-    
-} BeanData;
+
+} RecBeanData;
+
+typedef struct {
+    unsigned char sendBuffer[BEANBUFFSIZE];
+    // Bit that has been sent. As we send data in bits
+    unsigned char sentBit;
+    // Position in send buffer
+    unsigned char sendBuffPos;
+    // Byte count in transfer as sending from lower 4 bits of MK byte
+    // unsigned char sendBytesCount;
+    // Number of ticks to send to bus
+    unsigned char cnt;
+    // Transfer state
+    BeanTransferState sendBeanState;
+
+    // Should next bit be staffing?
+    unsigned char sendNextBitStaffing : 1;
+    // What bit shpuld be sent to bus (0/1)
+    unsigned char bean : 1;
+
+} SendBeanData;
+
 
 // Receive BEAN data from BEAN bus
-void recBean(BeanData *pBeanData, char bean, unsigned char cnt);
+void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt);
+void sendBean(SendBeanData* pBeanData);
 
 
 #ifdef	__cplusplus

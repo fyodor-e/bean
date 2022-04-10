@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "bean.X/bean.c"
+#include "bean.X/recBean.c"
 
 // Instruction
 // https://stackoverflow.com/questions/62910867/how-to-run-tests-and-debug-google-test-project-in-vs-code
@@ -17,7 +17,7 @@ typedef struct {
 class BeanTestClass : public ::testing::Test
 {
 protected:
-  BeanData beanData;
+  RecBeanData beanData;
   bool getNextData(BeanTransfer &beanTransfer)
   {
     // Dummy situation when we just starting transfer
@@ -31,13 +31,17 @@ protected:
     }
     else
     {
-      beanTransfer.cnt = 0;
+      // If prev cnt was 5 add staffing bit
+      beanTransfer.cnt = (beanTransfer.cnt == 5 ? 1 : 0);
       beanTransfer.bean = !beanTransfer.bean;
     }
 
     if (beanTransfer.byteTr < beanTransfer.dataSize)
     {
       while (beanTransfer.byteTr < beanTransfer.dataSize
+        // Either stop on 5 conseq bits with same val (to add staffing)
+        // or ignore this case when sending EOF or last byte
+        && (beanTransfer.cnt < 5 || beanTransfer.byteTr > beanTransfer.dataSize - 2)
         && !(beanTransfer.pData[beanTransfer.byteTr] & (0b1 << beanTransfer.bitTr)) == !beanTransfer.bean)
       {
         if (beanTransfer.bitTr == 0) {
@@ -103,6 +107,31 @@ TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
   EXPECT_EQ(beanData.pRecBuffer[7], data[7]);
 }
 
+TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
+{
+  unsigned char data[] = { 0b00010100, 0b00010000, 0b00000001, 0b00011111, 0b11100010, 0b10111111, 0b01111110, 0x01000000 };
+  BeanTransfer beanTransfer;
+  beanTransfer.pData = data;
+  // byteTr and bitTr should be set to 0 to init transfer. See getNextData
+  beanTransfer.byteTr = 0;
+  beanTransfer.bitTr = 0;
+  beanTransfer.bean = 0;
+  // staffing bit should be sent first
+  beanTransfer.cnt = 0;
+  beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
+  beanData.recBeanState = BEAN_NO_TR;
+
+  while(getNextData(beanTransfer)) recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+
+  EXPECT_EQ(beanData.pRecBuffer[0], data[0]);
+  EXPECT_EQ(beanData.pRecBuffer[1], data[1]);
+  EXPECT_EQ(beanData.pRecBuffer[2], data[2]);
+  EXPECT_EQ(beanData.pRecBuffer[3], data[3]);
+  EXPECT_EQ(beanData.pRecBuffer[4], data[4]);
+  EXPECT_EQ(beanData.pRecBuffer[5], data[5]);
+  EXPECT_EQ(beanData.pRecBuffer[6], data[6]);
+  EXPECT_EQ(beanData.pRecBuffer[7], data[7]);
+}
 
 int main(int argc, char *argv[])
 {

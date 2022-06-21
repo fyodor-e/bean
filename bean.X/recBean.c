@@ -12,7 +12,9 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
   {
     if (bean == 1) // This is end of SOF. Init buffer
     {
-      // InitBEANVars(1);
+      if (pBeanData->currRecBufferIdx == 2) pBeanData->currRecBufferIdx = 0;
+      else pBeanData->currRecBufferIdx++;
+
       pBeanData->recBeanState = BEAN_TR_SOF;
     }
     else
@@ -39,13 +41,13 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
 
   for (; cnt; cnt--)
   {
-    pBeanData->pRecBuffer[pBeanData->recBuffPos] |= (bean << pBeanData->recBit);
+    pBeanData->recBuffer[pBeanData->currRecBufferIdx][pBeanData->recBuffPos] |= (bean << pBeanData->recBit);
 
     if (pBeanData->recBit == 0)
     {
       if (pBeanData->recBuffPos == 1) // We just got first byte. Set ByteCountInTr
       {
-        pBeanData->recBytesCount = pBeanData->pRecBuffer[1] & 0b00001111;
+        pBeanData->recBytesCount = pBeanData->recBuffer[pBeanData->currRecBufferIdx][1] & 0b00001111;
         pBeanData->recBeanState = BEAN_TR_ML;
       }
       pBeanData->recBit = 7;

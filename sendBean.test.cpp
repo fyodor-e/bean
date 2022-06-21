@@ -8,21 +8,37 @@ class SendBeanTestClass : public ::testing::Test
 {
 protected:
   SendBeanData beanData;
+  unsigned char data[10];
+
+  SendBeanTestClass()
+  : data { 0x06, 0b10010010, 0b00010001, 0b00010001, 0b00100010, 0b00110011, 0b01011010 }
+  {}
 
   virtual void SetUp()
   {
-    unsigned char data[] = { 0x06, 0b10010010, 0b00010001, 0b00010001, 0b00100010, 0b00110011, 0b01011010 };
-    memcpy(beanData.sendBuffer, data, sizeof(data)/sizeof(data[0]));
-    beanData.sentBit = 7;
-    beanData.sendBuffPos = 0;
-    // beanData.sendBytesCount = 0;
-    beanData.cnt = 0;
-    beanData.sendBeanState = BEAN_NO_TR;
-
-    beanData.sendNextBitStaffing = 0;
-    beanData.bean = 0;
+    initSendBeanData (&beanData, (unsigned char *)&data);
   }
 };
+
+TEST_F(SendBeanTestClass, Should_init_Send_Bean_data)
+{
+    EXPECT_EQ(beanData.sendBuffer[0], data[0]);
+    EXPECT_EQ(beanData.sendBuffer[1], data[1]);
+    EXPECT_EQ(beanData.sendBuffer[2], data[2]);
+    EXPECT_EQ(beanData.sendBuffer[3], data[3]);
+    EXPECT_EQ(beanData.sendBuffer[4], data[4]);
+    EXPECT_EQ(beanData.sendBuffer[5], data[5]);
+    EXPECT_EQ(beanData.sendBuffer[6], data[6]);
+
+    EXPECT_EQ(beanData.sentBit, 7);
+    EXPECT_EQ(beanData.sendBuffPos, 0);
+    EXPECT_EQ(beanData.cnt, 0);
+    EXPECT_EQ(beanData.sendBeanState, BEAN_NO_TR);
+
+    EXPECT_EQ(beanData.sendNextBitStaffing, 0);
+    EXPECT_EQ(beanData.bean, 0);
+
+}
 
 TEST_F(SendBeanTestClass, Should_send_bean_data)
 {

@@ -1,3 +1,4 @@
+
 #include "bean.h"
 
 void sendBean(SendBeanData *pBeanData)
@@ -84,4 +85,16 @@ void sendBean(SendBeanData *pBeanData)
 
   if (pBeanData->cnt == 5)
     pBeanData->sendNextBitStaffing = 1;
+}
+
+void initSendBeanData (SendBeanData *pBeanData, unsigned char *buff) {
+    memcpy(pBeanData -> sendBuffer, buff, (buff[0] & 0x0F) + 1);
+    pBeanData -> sentBit = 7;
+    pBeanData -> sendBuffPos = 0;
+    // beanData.sendBytesCount = 0;
+    pBeanData -> cnt = 0;
+    pBeanData -> sendBeanState = BEAN_NO_TR;
+
+    pBeanData -> sendNextBitStaffing = 0;
+    pBeanData -> bean = 0;
 }

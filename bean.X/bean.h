@@ -37,7 +37,7 @@ typedef enum {
 
 typedef struct {
     unsigned char recBuffer[3][BEANBUFFSIZE];
-    unsigned char *pRecBuffer;
+    unsigned char currRecBufferIdx;
     // Bit that has been received. As we receive data in bits
     unsigned char recBit;
     // Position in receive buffer
@@ -76,7 +76,7 @@ typedef struct {
 // Receive BEAN data from BEAN bus
 void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt);
 void sendBean(SendBeanData* pBeanData);
-
+void initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);
 
 #ifdef	__cplusplus
 }

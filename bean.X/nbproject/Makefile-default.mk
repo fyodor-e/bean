@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=bean.c
+SOURCEFILES_QUOTED_IF_SPACED=recBean.c sendBean.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/bean.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/bean.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/recBean.o ${OBJECTDIR}/sendBean.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/recBean.o.d ${OBJECTDIR}/sendBean.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/bean.o
+OBJECTFILES=${OBJECTDIR}/recBean.o ${OBJECTDIR}/sendBean.o
 
 # Source Files
-SOURCEFILES=bean.c
+SOURCEFILES=recBean.c sendBean.c
 
 
 
@@ -107,18 +107,30 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/bean.o: bean.c  nbproject/Makefile-${CND_CONF}.mk 
+${OBJECTDIR}/recBean.o: recBean.c  nbproject/Makefile-${CND_CONF}.mk 
 	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/bean.o.d 
-	@${RM} ${OBJECTDIR}/bean.o 
-	@${FIXDEPS} "${OBJECTDIR}/bean.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c ${MP_CC} $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/bean.o.d" -o ${OBJECTDIR}/bean.o bean.c  
+	@${RM} ${OBJECTDIR}/recBean.o.d 
+	@${RM} ${OBJECTDIR}/recBean.o 
+	@${FIXDEPS} "${OBJECTDIR}/recBean.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c ${MP_CC} $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/recBean.o.d" -o ${OBJECTDIR}/recBean.o recBean.c  
+	
+${OBJECTDIR}/sendBean.o: sendBean.c  nbproject/Makefile-${CND_CONF}.mk 
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/sendBean.o.d 
+	@${RM} ${OBJECTDIR}/sendBean.o 
+	@${FIXDEPS} "${OBJECTDIR}/sendBean.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c ${MP_CC} $(MP_EXTRA_CC_PRE) -g -D__DEBUG   -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/sendBean.o.d" -o ${OBJECTDIR}/sendBean.o sendBean.c  
 	
 else
-${OBJECTDIR}/bean.o: bean.c  nbproject/Makefile-${CND_CONF}.mk 
+${OBJECTDIR}/recBean.o: recBean.c  nbproject/Makefile-${CND_CONF}.mk 
 	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/bean.o.d 
-	@${RM} ${OBJECTDIR}/bean.o 
-	@${FIXDEPS} "${OBJECTDIR}/bean.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c ${MP_CC} $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/bean.o.d" -o ${OBJECTDIR}/bean.o bean.c  
+	@${RM} ${OBJECTDIR}/recBean.o.d 
+	@${RM} ${OBJECTDIR}/recBean.o 
+	@${FIXDEPS} "${OBJECTDIR}/recBean.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c ${MP_CC} $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/recBean.o.d" -o ${OBJECTDIR}/recBean.o recBean.c  
+	
+${OBJECTDIR}/sendBean.o: sendBean.c  nbproject/Makefile-${CND_CONF}.mk 
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/sendBean.o.d 
+	@${RM} ${OBJECTDIR}/sendBean.o 
+	@${FIXDEPS} "${OBJECTDIR}/sendBean.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c ${MP_CC} $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/sendBean.o.d" -o ${OBJECTDIR}/sendBean.o sendBean.c  
 	
 endif
 

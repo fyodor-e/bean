@@ -60,7 +60,7 @@ protected:
     memset(beanData.recBuffer[0], 0, BEANBUFFSIZE);
     memset(beanData.recBuffer[1], 0, BEANBUFFSIZE);
     memset(beanData.recBuffer[2], 0, BEANBUFFSIZE);
-    beanData.pRecBuffer = beanData.recBuffer[0];
+    beanData.currRecBufferIdx = 0;
     beanData.recBit = 7;
     beanData.recBuffPos = 0;
     beanData.recBytesCount = 0;
@@ -97,14 +97,16 @@ TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
 
   while(getNextData(beanTransfer)) recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
 
-  EXPECT_EQ(beanData.pRecBuffer[0], data[0]);
-  EXPECT_EQ(beanData.pRecBuffer[1], data[1]);
-  EXPECT_EQ(beanData.pRecBuffer[2], data[2]);
-  EXPECT_EQ(beanData.pRecBuffer[3], data[3]);
-  EXPECT_EQ(beanData.pRecBuffer[4], data[4]);
-  EXPECT_EQ(beanData.pRecBuffer[5], data[5]);
-  EXPECT_EQ(beanData.pRecBuffer[6], data[6]);
-  EXPECT_EQ(beanData.pRecBuffer[7], data[7]);
+  unsigned char *pRecBuffer = beanData.recBuffer[beanData.currRecBufferIdx];
+
+  EXPECT_EQ(pRecBuffer[0], data[0]);
+  EXPECT_EQ(pRecBuffer[1], data[1]);
+  EXPECT_EQ(pRecBuffer[2], data[2]);
+  EXPECT_EQ(pRecBuffer[3], data[3]);
+  EXPECT_EQ(pRecBuffer[4], data[4]);
+  EXPECT_EQ(pRecBuffer[5], data[5]);
+  EXPECT_EQ(pRecBuffer[6], data[6]);
+  EXPECT_EQ(pRecBuffer[7], data[7]);
 }
 
 TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
@@ -123,14 +125,16 @@ TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
 
   while(getNextData(beanTransfer)) recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
 
-  EXPECT_EQ(beanData.pRecBuffer[0], data[0]);
-  EXPECT_EQ(beanData.pRecBuffer[1], data[1]);
-  EXPECT_EQ(beanData.pRecBuffer[2], data[2]);
-  EXPECT_EQ(beanData.pRecBuffer[3], data[3]);
-  EXPECT_EQ(beanData.pRecBuffer[4], data[4]);
-  EXPECT_EQ(beanData.pRecBuffer[5], data[5]);
-  EXPECT_EQ(beanData.pRecBuffer[6], data[6]);
-  EXPECT_EQ(beanData.pRecBuffer[7], data[7]);
+  unsigned char *pRecBuffer = beanData.recBuffer[beanData.currRecBufferIdx];
+
+  EXPECT_EQ(pRecBuffer[0], data[0]);
+  EXPECT_EQ(pRecBuffer[1], data[1]);
+  EXPECT_EQ(pRecBuffer[2], data[2]);
+  EXPECT_EQ(pRecBuffer[3], data[3]);
+  EXPECT_EQ(pRecBuffer[4], data[4]);
+  EXPECT_EQ(pRecBuffer[5], data[5]);
+  EXPECT_EQ(pRecBuffer[6], data[6]);
+  EXPECT_EQ(pRecBuffer[7], data[7]);
 }
 
 int main(int argc, char *argv[])

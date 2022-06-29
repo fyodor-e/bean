@@ -1,12 +1,13 @@
-
+#include <string.h>
 #include "bean.h"
 
 void sendBean(SendBeanData *pBeanData)
 {
   pBeanData->cnt = 0;
 
-  if (pBeanData->sendBeanState == BEAN_NO_TR) {
-    pBeanData->bean = 1;  // Send SOF
+  if (pBeanData->sendBeanState == BEAN_NO_TR)
+  {
+    pBeanData->bean = 1; // Send SOF
     pBeanData->sendBeanState = BEAN_TR_SOF;
     pBeanData->cnt = 1;
   }
@@ -20,50 +21,48 @@ void sendBean(SendBeanData *pBeanData)
   }
 
   // Data & CRC8 had been sent
-  if ((pBeanData->sendBuffer[0] & 0b00001111) + 2 == pBeanData->sendBuffPos
-    && pBeanData->cnt == 0)
+  if ((pBeanData->sendBuffer[0] & 0b00001111) + 2 == pBeanData->sendBuffPos && pBeanData->cnt == 0)
   {
-      pBeanData->sendBeanState = BEAN_TR_EOM;
-      switch (pBeanData->sentBit)
-      {
-        case 7:
-          pBeanData->sentBit = 6;
-          pBeanData->bean = 0;
-          pBeanData->cnt = 1;
-          break;
-        case 6:
-          pBeanData->sentBit = 0;
-          pBeanData->bean = 1;
-          pBeanData->cnt = 6;
-          break;
-        case 0:
-          pBeanData->sentBit = 6;
-          pBeanData->sendBuffPos++;
-          pBeanData->bean = 0;
-          pBeanData->cnt = 2; // Send last EOM bit and first RSP
-          break;
-      }
+    pBeanData->sendBeanState = BEAN_TR_EOM;
+    switch (pBeanData->sentBit)
+    {
+    case 7:
+      pBeanData->sentBit = 6;
+      pBeanData->bean = 0;
+      pBeanData->cnt = 1;
+      break;
+    case 6:
+      pBeanData->sentBit = 0;
+      pBeanData->bean = 1;
+      pBeanData->cnt = 6;
+      break;
+    case 0:
+      pBeanData->sentBit = 6;
+      pBeanData->sendBuffPos++;
+      pBeanData->bean = 0;
+      pBeanData->cnt = 2; // Send last EOM bit and first RSP
+      break;
+    }
     return;
   }
 
   // EOM sent, send RSP
-  if ((pBeanData->sendBuffer[0] & 0b00001111) + 3 == pBeanData->sendBuffPos
-    && pBeanData->cnt == 0)
+  if ((pBeanData->sendBuffer[0] & 0b00001111) + 3 == pBeanData->sendBuffPos && pBeanData->cnt == 0)
   {
-      pBeanData->sendBeanState = BEAN_TR_RSP;
-      switch (pBeanData->sentBit)
-      {
-        case 6:
-          pBeanData->sentBit--;
-          pBeanData->bean = 1;
-          pBeanData->cnt = 1;
-          break;
-        case 5:
-          pBeanData->sendBeanState = BEAN_NO_TR;
-          pBeanData->bean = 0;
-          pBeanData->cnt = 0;
-          break;
-      }
+    pBeanData->sendBeanState = BEAN_TR_RSP;
+    switch (pBeanData->sentBit)
+    {
+    case 6:
+      pBeanData->sentBit--;
+      pBeanData->bean = 1;
+      pBeanData->cnt = 1;
+      break;
+    case 5:
+      pBeanData->sendBeanState = BEAN_NO_TR;
+      pBeanData->bean = 0;
+      pBeanData->cnt = 0;
+      break;
+    }
     return;
   }
 
@@ -79,7 +78,8 @@ void sendBean(SendBeanData *pBeanData)
       pBeanData->sentBit = 7;
       pBeanData->sendBuffPos++;
     }
-    else pBeanData->sentBit--;
+    else
+      pBeanData->sentBit--;
     (pBeanData->cnt)++;
   }
 
@@ -87,14 +87,26 @@ void sendBean(SendBeanData *pBeanData)
     pBeanData->sendNextBitStaffing = 1;
 }
 
-void initSendBeanData (SendBeanData *pBeanData, unsigned char *buff) {
-    memcpy(pBeanData -> sendBuffer, buff, (buff[0] & 0x0F) + 1);
-    pBeanData -> sentBit = 7;
-    pBeanData -> sendBuffPos = 0;
-    // beanData.sendBytesCount = 0;
-    pBeanData -> cnt = 0;
-    pBeanData -> sendBeanState = BEAN_NO_TR;
+void initSendBeanData(SendBeanData *pBeanData, unsigned char *buff)
+{
+  if (pBeanData->sendBeanState != BEAN_NO_TR)
+    return;
+  resetSendBuffer(pBeanData);
+  // Add 1 byte for ML and one for CRC
+  memcpy(pBeanData->sendBuffer, buff, (buff[0] & 0x0F) + 2);
+}
 
-    pBeanData -> sendNextBitStaffing = 0;
-    pBeanData -> bean = 0;
+void resetSendBuffer(SendBeanData *pBeanData) {
+  pBeanData->sendBuffer[0] = 0;
+  pBeanData->sentBit = 7;
+  pBeanData->sendBuffPos = 0;
+  pBeanData->cnt = 0;
+  pBeanData->sendBeanState = BEAN_NO_TR;
+
+  pBeanData->sendNextBitStaffing = 0;
+  pBeanData->bean = 0;
+}
+
+unsigned char isTransferInProgress(SendBeanData *pBeanData) {
+  return pBeanData->sendBeanState != BEAN_NO_TR && pBeanData->sendBeanState != BEAN_TR_ERR;
 }

@@ -4,7 +4,8 @@
 // Instruction
 // https://stackoverflow.com/questions/62910867/how-to-run-tests-and-debug-google-test-project-in-vs-code
 
-typedef struct {
+typedef struct
+{
   unsigned char *pData;
   int dataSize;
   unsigned char byteTr;
@@ -39,16 +40,17 @@ protected:
     if (beanTransfer.byteTr < beanTransfer.dataSize)
     {
       while (beanTransfer.byteTr < beanTransfer.dataSize
-        // Either stop on 5 conseq bits with same val (to add staffing)
-        // or ignore this case when sending EOF or last byte
-        && (beanTransfer.cnt < 5 || beanTransfer.byteTr > beanTransfer.dataSize - 2)
-        && !(beanTransfer.pData[beanTransfer.byteTr] & (0b1 << beanTransfer.bitTr)) == !beanTransfer.bean)
+             // Either stop on 5 conseq bits with same val (to add staffing)
+             // or ignore this case when sending EOF or last byte
+             && (beanTransfer.cnt < 5 || beanTransfer.byteTr > beanTransfer.dataSize - 2) && !(beanTransfer.pData[beanTransfer.byteTr] & (0b1 << beanTransfer.bitTr)) == !beanTransfer.bean)
       {
-        if (beanTransfer.bitTr == 0) {
+        if (beanTransfer.bitTr == 0)
+        {
           beanTransfer.bitTr = 7;
           beanTransfer.byteTr++;
         }
-        else beanTransfer.bitTr--;
+        else
+          beanTransfer.bitTr--;
         beanTransfer.cnt++;
       }
     }
@@ -57,17 +59,22 @@ protected:
 
   virtual void SetUp()
   {
-    memset(beanData.recBuffer[0], 0, BEANBUFFSIZE);
-    memset(beanData.recBuffer[1], 0, BEANBUFFSIZE);
-    memset(beanData.recBuffer[2], 0, BEANBUFFSIZE);
-    beanData.currRecBufferIdx = 0;
-    beanData.recBit = 7;
-    beanData.recBuffPos = 0;
-    beanData.recBytesCount = 0;
-    beanData.recBeanState = BEAN_NO_TR;
-    beanData.recIsNextBitStaffing = 0;
+    resetRecBuffer(&beanData);
   }
 };
+
+TEST_F(BeanTestClass, Should_reset_rec_bean_data)
+{
+  EXPECT_EQ(beanData.recBuffer[0][0], 0);
+  EXPECT_EQ(beanData.recBuffer[1][0], 0);
+  EXPECT_EQ(beanData.recBuffer[2][0], 0);
+  EXPECT_EQ(beanData.currRecBufferIdx, 0);
+  EXPECT_EQ(beanData.recBit, 7);
+  EXPECT_EQ(beanData.recBuffPos, 0);
+  EXPECT_EQ(beanData.recBytesCount, 0);
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+  EXPECT_EQ(beanData.recIsNextBitStaffing, 0);
+}
 
 TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_When_More_Than_BEAN_NO_TR_COND_bits_got)
 {
@@ -83,7 +90,7 @@ TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_When_More_Than_BEAN_NO_TR_COND_bits_
 
 TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
 {
-  unsigned char data[] = { 0b00010100, 0b10010010, 0b00010001, 0b00010001, 0b00100010, 0b00110011, 0b01111110, 0x01000000 };
+  unsigned char data[] = {0b00010100, 0b10010010, 0b00010001, 0b00010001, 0b00100010, 0b00110011, 0b01111110, 0x01000000};
   BeanTransfer beanTransfer;
   beanTransfer.pData = data;
   // byteTr and bitTr should be set to 0 to init transfer. See getNextData
@@ -95,7 +102,8 @@ TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
   beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
   beanData.recBeanState = BEAN_NO_TR;
 
-  while(getNextData(beanTransfer)) recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
 
   unsigned char *pRecBuffer = beanData.recBuffer[beanData.currRecBufferIdx];
 
@@ -111,7 +119,7 @@ TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
 
 TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
 {
-  unsigned char data[] = { 0b00010100, 0b00010000, 0b00000001, 0b00011111, 0b11100010, 0b10111111, 0b01111110, 0x01000000 };
+  unsigned char data[] = {0b00010100, 0b00010000, 0b00000001, 0b00011111, 0b11100010, 0b10111111, 0b01111110, 0x01000000};
   BeanTransfer beanTransfer;
   beanTransfer.pData = data;
   // byteTr and bitTr should be set to 0 to init transfer. See getNextData
@@ -123,7 +131,8 @@ TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
   beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
   beanData.recBeanState = BEAN_NO_TR;
 
-  while(getNextData(beanTransfer)) recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
 
   unsigned char *pRecBuffer = beanData.recBuffer[beanData.currRecBufferIdx];
 

@@ -1,20 +1,35 @@
 #include "bean.h"
+#include <string.h>
+
+void initRecBuffer(RecBeanData *pBeanData, unsigned char bufIdx)
+{
+  memset(pBeanData->recBuffer[bufIdx], 0, BEANBUFFSIZE);
+  pBeanData->currRecBufferIdx = bufIdx;
+  pBeanData->recBit = 7;
+  pBeanData->recBuffPos = 0;
+  pBeanData->recBytesCount = 0;
+  pBeanData->recBeanState = BEAN_NO_TR;
+  pBeanData->recIsNextBitStaffing = 0;
+}
 
 void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
 {
   if (cnt >= BEAN_NO_TR_COND)
   {
+    // Init buffer
+    if (pBeanData->currRecBufferIdx == 2)
+      pBeanData->currRecBufferIdx = 0;
+    else
+      pBeanData->currRecBufferIdx++;
+    initRecBuffer(pBeanData, pBeanData->currRecBufferIdx);
     pBeanData->recBeanState = (bean ? BEAN_TR_ERR : BEAN_NO_TR);
     return;
   }
 
   if (pBeanData->recBeanState == BEAN_NO_TR)
   {
-    if (bean == 1) // This is end of SOF. Init buffer
+    if (bean == 1)
     {
-      if (pBeanData->currRecBufferIdx == 2) pBeanData->currRecBufferIdx = 0;
-      else pBeanData->currRecBufferIdx++;
-
       pBeanData->recBeanState = BEAN_TR_SOF;
     }
     else
@@ -56,4 +71,12 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
     else
       pBeanData->recBit--;
   }
+}
+
+void resetRecBuffer(RecBeanData *pBeanData)
+{
+  memset(pBeanData->recBuffer[0], 0, BEANBUFFSIZE);
+  memset(pBeanData->recBuffer[1], 0, BEANBUFFSIZE);
+  memset(pBeanData->recBuffer[2], 0, BEANBUFFSIZE);
+  initRecBuffer(pBeanData, 0);
 }

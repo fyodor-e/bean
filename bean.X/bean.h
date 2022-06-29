@@ -30,9 +30,6 @@ typedef enum {
 
     BEAN_TR_ERR = 0x81,
     BEAN_TR_CRCERR = 0x82,
-
-    BEAN_TR_NEXT_STAFF_BIT = 0x80,   // 5 same bits received
-    BEAN_TR_NO_STAFFING = 0x40,
 } BeanTransferState;
 
 typedef struct {
@@ -75,8 +72,14 @@ typedef struct {
 
 // Receive BEAN data from BEAN bus
 void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt);
+void resetRecBuffer(RecBeanData *pBeanData);
+
 void sendBean(SendBeanData* pBeanData);
 void initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);
+void resetSendBuffer(SendBeanData *pBeanData);
+unsigned char isTransferInProgress(SendBeanData *pBeanData);
+
+unsigned char Crc8(unsigned char *pcBlock, unsigned char len);
 
 #ifdef	__cplusplus
 }

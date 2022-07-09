@@ -13,6 +13,7 @@ typedef struct
   unsigned char bean;
   // staffing bit should be sent first
   unsigned char cnt;
+  unsigned char trInPr;
 } BeanTransfer;
 
 class BeanTestClass : public ::testing::Test
@@ -21,14 +22,14 @@ protected:
   RecBeanData beanData;
   bool getNextData(BeanTransfer &beanTransfer)
   {
-    // Dummy situation when we just starting transfer
-    if (beanTransfer.byteTr == 0 && beanTransfer.bitTr == 0)
+    if (beanTransfer.trInPr == 0)
     {
       // We're starting transmission, set SOF
       beanTransfer.cnt = 1;
       beanTransfer.bean = 1;
       // Set up bit tr to first bit
       beanTransfer.bitTr = 7;
+      beanTransfer.trInPr = 1;
     }
     else
     {
@@ -42,7 +43,8 @@ protected:
       while (beanTransfer.byteTr < beanTransfer.dataSize
              // Either stop on 5 conseq bits with same val (to add staffing)
              // or ignore this case when sending EOF or last byte
-             && (beanTransfer.cnt < 5 || beanTransfer.byteTr > beanTransfer.dataSize - 2) && !(beanTransfer.pData[beanTransfer.byteTr] & (0b1 << beanTransfer.bitTr)) == !beanTransfer.bean)
+             && (beanTransfer.cnt < 5 || beanTransfer.byteTr >= beanTransfer.dataSize - 2)
+             && !(beanTransfer.pData[beanTransfer.byteTr] & (0b1 << beanTransfer.bitTr)) == !beanTransfer.bean)
       {
         if (beanTransfer.bitTr == 0)
         {
@@ -65,15 +67,15 @@ protected:
 
 TEST_F(BeanTestClass, Should_reset_rec_bean_data)
 {
-  EXPECT_EQ(beanData.recBuffer[0][0], 0);
-  EXPECT_EQ(beanData.recBuffer[1][0], 0);
-  EXPECT_EQ(beanData.recBuffer[2][0], 0);
-  EXPECT_EQ(beanData.currRecBufferIdx, 0);
+  EXPECT_EQ(beanData.recBuffer1[0], 0);
+  EXPECT_EQ(beanData.recBuffer2[0], 0);
+  EXPECT_EQ(beanData.intBuffer, beanData.recBuffer1);
+  EXPECT_EQ(beanData.buffer, beanData.recBuffer2);
   EXPECT_EQ(beanData.recBit, 7);
   EXPECT_EQ(beanData.recBuffPos, 0);
-  EXPECT_EQ(beanData.recBytesCount, 0);
   EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
   EXPECT_EQ(beanData.recIsNextBitStaffing, 0);
+  EXPECT_EQ(beanData.recBufferFull, 0);
 }
 
 TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_When_More_Than_BEAN_NO_TR_COND_bits_got)
@@ -99,22 +101,23 @@ TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
   beanTransfer.bean = 0;
   // staffing bit should be sent first
   beanTransfer.cnt = 0;
+  beanTransfer.trInPr = 0;
   beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
   beanData.recBeanState = BEAN_NO_TR;
 
   while (getNextData(beanTransfer))
     recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+  recBean(&beanData, 0, BEAN_NO_TR_COND);
 
-  unsigned char *pRecBuffer = beanData.recBuffer[beanData.currRecBufferIdx];
-
-  EXPECT_EQ(pRecBuffer[0], data[0]);
-  EXPECT_EQ(pRecBuffer[1], data[1]);
-  EXPECT_EQ(pRecBuffer[2], data[2]);
-  EXPECT_EQ(pRecBuffer[3], data[3]);
-  EXPECT_EQ(pRecBuffer[4], data[4]);
-  EXPECT_EQ(pRecBuffer[5], data[5]);
-  EXPECT_EQ(pRecBuffer[6], data[6]);
-  EXPECT_EQ(pRecBuffer[7], data[7]);
+  EXPECT_EQ(beanData.recBufferFull, 1);
+  EXPECT_EQ(beanData.buffer[0], data[0]);
+  EXPECT_EQ(beanData.buffer[1], data[1]);
+  EXPECT_EQ(beanData.buffer[2], data[2]);
+  EXPECT_EQ(beanData.buffer[3], data[3]);
+  EXPECT_EQ(beanData.buffer[4], data[4]);
+  EXPECT_EQ(beanData.buffer[5], data[5]);
+  EXPECT_EQ(beanData.buffer[6], data[6]);
+  EXPECT_EQ(beanData.buffer[7], data[7]);
 }
 
 TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
@@ -128,22 +131,55 @@ TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
   beanTransfer.bean = 0;
   // staffing bit should be sent first
   beanTransfer.cnt = 0;
+  beanTransfer.trInPr = 0;
   beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
   beanData.recBeanState = BEAN_NO_TR;
 
   while (getNextData(beanTransfer))
     recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+  recBean(&beanData, 0, BEAN_NO_TR_COND);
 
-  unsigned char *pRecBuffer = beanData.recBuffer[beanData.currRecBufferIdx];
+  EXPECT_EQ(beanData.recBufferFull, 1);
+  EXPECT_EQ(beanData.buffer[0], data[0]);
+  EXPECT_EQ(beanData.buffer[1], data[1]);
+  EXPECT_EQ(beanData.buffer[2], data[2]);
+  EXPECT_EQ(beanData.buffer[3], data[3]);
+  EXPECT_EQ(beanData.buffer[4], data[4]);
+  EXPECT_EQ(beanData.buffer[5], data[5]);
+  EXPECT_EQ(beanData.buffer[6], data[6]);
+  EXPECT_EQ(beanData.buffer[7], data[7]);
+}
 
-  EXPECT_EQ(pRecBuffer[0], data[0]);
-  EXPECT_EQ(pRecBuffer[1], data[1]);
-  EXPECT_EQ(pRecBuffer[2], data[2]);
-  EXPECT_EQ(pRecBuffer[3], data[3]);
-  EXPECT_EQ(pRecBuffer[4], data[4]);
-  EXPECT_EQ(pRecBuffer[5], data[5]);
-  EXPECT_EQ(pRecBuffer[6], data[6]);
-  EXPECT_EQ(pRecBuffer[7], data[7]);
+TEST_F(BeanTestClass, Should_Accept_Transfer_With_00andFF)
+{
+  unsigned char data[] = {0x06, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0x42, 0b01111110, 0x01000000};
+  BeanTransfer beanTransfer;
+  beanTransfer.pData = data;
+  // byteTr and bitTr should be set to 0 to init transfer. See getNextData
+  beanTransfer.byteTr = 0;
+  beanTransfer.bitTr = 0;
+  beanTransfer.bean = 0;
+  // staffing bit should be sent first
+  beanTransfer.cnt = 0;
+  beanTransfer.trInPr = 0;
+  beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
+  beanData.recBeanState = BEAN_NO_TR;
+
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+  recBean(&beanData, 0, BEAN_NO_TR_COND);
+
+  EXPECT_EQ(beanData.recBufferFull, 1);
+  EXPECT_EQ(beanData.buffer[0], data[0]);
+  EXPECT_EQ(beanData.buffer[1], data[1]);
+  EXPECT_EQ(beanData.buffer[2], data[2]);
+  EXPECT_EQ(beanData.buffer[3], data[3]);
+  EXPECT_EQ(beanData.buffer[4], data[4]);
+  EXPECT_EQ(beanData.buffer[5], data[5]);
+  EXPECT_EQ(beanData.buffer[6], data[6]);
+  EXPECT_EQ(beanData.buffer[7], data[7]);
+  EXPECT_EQ(beanData.buffer[8], data[8]);
+  EXPECT_EQ(beanData.buffer[9], data[9]);
 }
 
 int main(int argc, char *argv[])

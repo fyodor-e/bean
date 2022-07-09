@@ -12,12 +12,14 @@
 extern "C" {
 #endif
 
-#define BEANBUFFSIZE 63
+#define BEANBUFFSIZE 17 * 8 // 13 (Data + Header) + ML + CRC + EOM + RSP = 17
     // When more than BEAN_NOT_COND ticks passed it means that transfer terminated
 #define BEAN_NO_TR_COND          7
 
 typedef enum {
-    BEAN_NO_TR,
+    BEAN_NO_TR,             // Should be first to equal to 0
+    BEAN_NO_TR_DATA_PRESENT, // Np transfer in progress but data has been loaded to tr buffer
+    BEAN_TR_IN_PR,
     BEAN_TR_SOF,       // We are just got SOF and some part of ML.
     BEAN_TR_MLINPR,
     BEAN_TR_ML,       // We are getting ML
@@ -33,19 +35,21 @@ typedef enum {
 } BeanTransferState;
 
 typedef struct {
-    unsigned char recBuffer[3][BEANBUFFSIZE];
-    unsigned char currRecBufferIdx;
+    unsigned char recBuffer1[BEANBUFFSIZE];
+    unsigned char recBuffer2[BEANBUFFSIZE];
+    unsigned char *intBuffer; // Is used to receive data by bean executable
+    unsigned char *buffer; // Is used to get data by user app
     // Bit that has been received. As we receive data in bits
     unsigned char recBit;
     // Position in receive buffer
     unsigned char recBuffPos;
-    // Byte count in transfer as received from lower 4 bits of MK byte
-    unsigned char recBytesCount;
     // Transfer state
     BeanTransferState recBeanState;
 
     // Do we await staffing bit next?
     unsigned char recIsNextBitStaffing : 1;
+    // Is set when rec buffer is full of data by bean exec
+    unsigned char recBufferFull : 1;
 
 } RecBeanData;
 
@@ -55,8 +59,6 @@ typedef struct {
     unsigned char sentBit;
     // Position in send buffer
     unsigned char sendBuffPos;
-    // Byte count in transfer as sending from lower 4 bits of MK byte
-    // unsigned char sendBytesCount;
     // Number of ticks to send to bus
     unsigned char cnt;
     // Transfer state
@@ -69,15 +71,15 @@ typedef struct {
 
 } SendBeanData;
 
-
 // Receive BEAN data from BEAN bus
 void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt);
 void resetRecBuffer(RecBeanData *pBeanData);
 
 void sendBean(SendBeanData* pBeanData);
-void initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);
+unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);
 void resetSendBuffer(SendBeanData *pBeanData);
 unsigned char isTransferInProgress(SendBeanData *pBeanData);
+unsigned char canStartTransfer(BeanTransferState sendBeanState, BeanTransferState recBeanState);
 
 unsigned char Crc8(unsigned char *pcBlock, unsigned char len);
 

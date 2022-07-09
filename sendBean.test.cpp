@@ -49,7 +49,7 @@ TEST_F(SendBeanTestClass, Should_NOT_alter_Send_Bean_data_if_sendBeanState_is_no
 {
   beanData.sendBeanState = BEAN_TR_SOF;
   beanData.sendBuffer[0] = 0xAA;
-  initSendBeanData(&beanData, (unsigned char *)&data);
+  EXPECT_EQ(initSendBeanData(&beanData, (unsigned char *)&data), 0);
 
   EXPECT_EQ(beanData.sendBuffer[0], 0xAA);
   EXPECT_EQ(beanData.sendBeanState, BEAN_TR_SOF);

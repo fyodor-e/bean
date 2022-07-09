@@ -5,7 +5,7 @@ void sendBean(SendBeanData *pBeanData)
 {
   pBeanData->cnt = 0;
 
-  if (pBeanData->sendBeanState == BEAN_NO_TR)
+  if (pBeanData->sendBeanState == BEAN_NO_TR_DATA_PRESENT)
   {
     pBeanData->bean = 1; // Send SOF
     pBeanData->sendBeanState = BEAN_TR_SOF;
@@ -85,15 +85,19 @@ void sendBean(SendBeanData *pBeanData)
 
   if (pBeanData->cnt == 5)
     pBeanData->sendNextBitStaffing = 1;
+
+  return;
 }
 
-void initSendBeanData(SendBeanData *pBeanData, unsigned char *buff)
+unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff)
 {
-  if (pBeanData->sendBeanState != BEAN_NO_TR)
-    return;
+  // All other states, except BEAN_NO_TR does not allow to put data into buffer
+  if (pBeanData->sendBeanState != BEAN_NO_TR) return 0;
   resetSendBuffer(pBeanData);
   // Add 1 byte for ML and one for CRC
   memcpy(pBeanData->sendBuffer, buff, (buff[0] & 0x0F) + 2);
+  pBeanData->sendBeanState = BEAN_NO_TR_DATA_PRESENT;
+  return 1;
 }
 
 void resetSendBuffer(SendBeanData *pBeanData) {
@@ -108,5 +112,12 @@ void resetSendBuffer(SendBeanData *pBeanData) {
 }
 
 unsigned char isTransferInProgress(SendBeanData *pBeanData) {
-  return pBeanData->sendBeanState != BEAN_NO_TR && pBeanData->sendBeanState != BEAN_TR_ERR;
+  return pBeanData->sendBeanState != BEAN_NO_TR
+          && pBeanData->sendBeanState != BEAN_TR_ERR
+          && pBeanData->sendBeanState != BEAN_NO_TR_DATA_PRESENT;
+}
+
+unsigned char canStartTransfer(BeanTransferState sendBeanState, BeanTransferState recBeanState)
+{
+  return sendBeanState == BEAN_NO_TR_DATA_PRESENT && recBeanState == BEAN_NO_TR;
 }

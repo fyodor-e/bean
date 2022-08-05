@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define BEANBUFFSIZE 17 * 8 // 13 (Data + Header) + ML + CRC + EOM + RSP = 17
+#define BEANBUFFSIZE 17   // 13 (Data + Header) + ML + CRC + EOM + RSP = 17
     // When more than BEAN_NOT_COND ticks passed it means that transfer terminated
 #define BEAN_NO_TR_COND          7
 
@@ -74,6 +74,10 @@ typedef struct {
 // Receive BEAN data from BEAN bus
 void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt);
 void resetRecBuffer(RecBeanData *pBeanData);
+
+#ifdef __32MX220F032B__
+unsigned char getCntFromTmr(unsigned short tmr, unsigned short t_cnt);
+#endif
 
 void sendBean(SendBeanData* pBeanData);
 unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);

@@ -80,3 +80,12 @@ void resetRecBuffer(RecBeanData *pBeanData)
   pBeanData->recBufferFull = 0;
   initRecBuffer(pBeanData);
 }
+
+#ifdef __32MX220F032B__
+unsigned char getCntFromTmr(unsigned short tmr, unsigned short t_cnt)
+{
+  unsigned char cnt = tmr / t_cnt;
+  unsigned char reminder = tmr - (cnt * t_cnt);
+  return cnt + (reminder > (t_cnt * 3) / 4);
+}
+#endif

@@ -136,12 +136,9 @@ TEST_F(SendBeanTestClass, Should_send_bean_data)
   EXPECT_EQ(beanData.cnt, 1);
   EXPECT_EQ(beanData.bean, 1);
   sendBean(&beanData);
-  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.cnt, 2);
   EXPECT_EQ(beanData.bean, 0);
   // Fifth byte ends (CRC8)
-  sendBean(&beanData);
-  EXPECT_EQ(beanData.cnt, 1);
-  EXPECT_EQ(beanData.bean, 0);
   sendBean(&beanData);
   EXPECT_EQ(beanData.cnt, 6);
   EXPECT_EQ(beanData.bean, 1);
@@ -157,3 +154,194 @@ TEST_F(SendBeanTestClass, Should_send_bean_data)
   EXPECT_EQ(beanData.bean, 0);
   EXPECT_EQ(beanData.sendBeanState, BEAN_NO_TR);
 }
+
+TEST_F(SendBeanTestClass, Start_with_0xFD)
+{
+  unsigned char data[15] = { 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xCC };
+  memcpy(beanData.sendBuffer, data, 15);
+
+  sendBean(&beanData);
+  // SOF
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  EXPECT_EQ(beanData.sendBeanState, BEAN_TR_SOF);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0); // staffing
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 2);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);  // staffing
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+}
+
+TEST_F(SendBeanTestClass, Start_with_0xF3)
+{
+  unsigned char data[5] = { 0xF3, 0xFF, 0xFF, 0xFF, 0xCC };
+  memcpy(beanData.sendBuffer, data, 5);
+
+  sendBean(&beanData);
+  // SOF
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  EXPECT_EQ(beanData.sendBeanState, BEAN_TR_SOF);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 3); // with staffing
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);  // staffing
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 3);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 2);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 2);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 3);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 6);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 2);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 0);
+  EXPECT_EQ(beanData.bean, 0);
+  EXPECT_EQ(beanData.sendBeanState, BEAN_NO_TR);
+}
+
+TEST_F(SendBeanTestClass, End_with_1)
+{
+  unsigned char data[5] = { 0xF3, 0xFF, 0xFF, 0xFF, 0xCF };
+  memcpy(beanData.sendBuffer, data, 5);
+
+  sendBean(&beanData);
+  // SOF
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  EXPECT_EQ(beanData.sendBeanState, BEAN_TR_SOF);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 3); // with staffing
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);  // staffing
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 5);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 3);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 2);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 4);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 6);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 2);
+  EXPECT_EQ(beanData.bean, 0);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 1);
+  EXPECT_EQ(beanData.bean, 1);
+  sendBean(&beanData);
+  EXPECT_EQ(beanData.cnt, 0);
+  EXPECT_EQ(beanData.bean, 0);
+  EXPECT_EQ(beanData.sendBeanState, BEAN_NO_TR);
+}
+

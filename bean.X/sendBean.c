@@ -20,58 +20,12 @@ void sendBean(SendBeanData *pBeanData)
     pBeanData->sendNextBitStaffing = 0;
   }
 
-  // Data & CRC8 had been sent
-  if ((pBeanData->sendBuffer[0] & 0b00001111) + 2 == pBeanData->sendBuffPos && pBeanData->cnt == 0)
-  {
-    pBeanData->sendBeanState = BEAN_TR_EOM;
-    switch (pBeanData->sentBit)
-    {
-    case 7:
-      pBeanData->sentBit = 6;
-      pBeanData->bean = 0;
-      pBeanData->cnt = 1;
-      break;
-    case 6:
-      pBeanData->sentBit = 0;
-      pBeanData->bean = 1;
-      pBeanData->cnt = 6;
-      break;
-    case 0:
-      pBeanData->sentBit = 6;
-      pBeanData->sendBuffPos++;
-      pBeanData->bean = 0;
-      pBeanData->cnt = 2; // Send last EOM bit and first RSP
-      break;
-    }
-    return;
-  }
-
-  // EOM sent, send RSP
-  if ((pBeanData->sendBuffer[0] & 0b00001111) + 3 == pBeanData->sendBuffPos && pBeanData->cnt == 0)
-  {
-    pBeanData->sendBeanState = BEAN_TR_RSP;
-    switch (pBeanData->sentBit)
-    {
-    case 6:
-      pBeanData->sentBit--;
-      pBeanData->bean = 1;
-      pBeanData->cnt = 1;
-      break;
-    case 5:
-      pBeanData->sendBeanState = BEAN_NO_TR;
-      pBeanData->bean = 0;
-      pBeanData->cnt = 0;
-      break;
-    }
-    return;
-  }
-
-  if (pBeanData->cnt == 0)
+  if (pBeanData->cnt == 0 && (pBeanData->sendBuffer[0] & 0b00001111) + 2 > pBeanData->sendBuffPos)
     pBeanData->bean = !!(pBeanData->sendBuffer[pBeanData->sendBuffPos] & (1 << pBeanData->sentBit));
 
-  while (((pBeanData->sendBuffer[0] & 0b00001111) + 2 != pBeanData->sendBuffPos) &&
-         (pBeanData->bean == (!!(pBeanData->sendBuffer[pBeanData->sendBuffPos] & (1 << pBeanData->sentBit)))) &&
-         pBeanData->cnt != 5)
+  while ((pBeanData->sendBuffer[0] & 0b00001111) + 2 > pBeanData->sendBuffPos
+         && (pBeanData->bean == (!!(pBeanData->sendBuffer[pBeanData->sendBuffPos] & (1 << pBeanData->sentBit))))
+         && pBeanData->cnt < 5)
   {
     if (pBeanData->sentBit == 0)
     {
@@ -83,10 +37,57 @@ void sendBean(SendBeanData *pBeanData)
     (pBeanData->cnt)++;
   }
 
-  if (pBeanData->cnt == 5)
+  if (pBeanData->cnt == 5) {
     pBeanData->sendNextBitStaffing = 1;
+    return;
+  }
 
-  return;
+    // Data & CRC8 had been sent
+  if ((pBeanData->sendBuffer[0] & 0b00001111) + 2 == pBeanData->sendBuffPos)
+  {
+    switch (pBeanData->sentBit)
+    {
+    case 7:
+      // Last sent bit from CRC can be 1 (bean = 1) In this case skip for this time and send bean = 0 on next iteration
+      if (pBeanData->bean == 0 || pBeanData->cnt == 0) {
+        pBeanData->sentBit = 6;
+        pBeanData->bean = 0;
+        pBeanData->cnt++;
+      }
+      break;
+    case 6:
+      pBeanData->sentBit = 0;
+      pBeanData->bean = 1;
+      pBeanData->cnt += 6;
+      break;
+    case 0:
+      pBeanData->sentBit = 6;
+      pBeanData->sendBuffPos++;
+      pBeanData->bean = 0;
+      pBeanData->cnt += 2; // Send last EOM bit and first RSP
+      break;
+    }
+    return;
+  }
+
+  // EOM sent, send RSP
+  if ((pBeanData->sendBuffer[0] & 0b00001111) + 3 == pBeanData->sendBuffPos)
+  {
+    switch (pBeanData->sentBit)
+    {
+    case 6:
+      pBeanData->sentBit--;
+      pBeanData->bean = 1;
+      pBeanData->cnt += 1;
+      break;
+    case 5:
+      pBeanData->sendBeanState = BEAN_NO_TR;
+      pBeanData->bean = 0;
+      pBeanData->cnt = 0;
+      break;
+    }
+    return;
+  }
 }
 
 unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff)

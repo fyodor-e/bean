@@ -82,6 +82,8 @@ unsigned char getCntFromTmr(unsigned short tmr, unsigned short t_cnt);
 void sendBean(SendBeanData* pBeanData);
 unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);
 void resetSendBuffer(SendBeanData *pBeanData);
+void setSendError(SendBeanData *pBeanData);
+unsigned char resetSendError(SendBeanData *pBeanData);
 unsigned char isTransferInProgress(SendBeanData *pBeanData);
 unsigned char canStartTransfer(BeanTransferState sendBeanState, BeanTransferState recBeanState);
 

@@ -102,17 +102,32 @@ unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff)
 }
 
 void resetSendBuffer(SendBeanData *pBeanData) {
+  setSendError(pBeanData);
   pBeanData->sendBuffer[0] = 0;
+  pBeanData->sendBeanState = BEAN_NO_TR;
+}
+
+// In case of error during transfer. Most caused by collisions on BEAN bus
+// Do not reset original sendBuffer as it should be resent
+void setSendError(SendBeanData *pBeanData) {
   pBeanData->sentBit = 7;
   pBeanData->sendBuffPos = 0;
   pBeanData->cnt = 0;
-  pBeanData->sendBeanState = BEAN_NO_TR;
+  pBeanData->sendBeanState = BEAN_TR_ERR;
 
   pBeanData->sendNextBitStaffing = 0;
   pBeanData->bean = 0;
 }
 
-unsigned char isTransferInProgress(SendBeanData *pBeanData) {
+inline unsigned char resetSendError(SendBeanData *pBeanData) {
+  if (pBeanData->sendBeanState == BEAN_TR_ERR) {
+    pBeanData->sendBeanState = BEAN_NO_TR_DATA_PRESENT;
+    return 1;
+  }
+  return 0;
+}
+
+inline unsigned char isTransferInProgress(SendBeanData *pBeanData) {
   return pBeanData->sendBeanState != BEAN_NO_TR
           && pBeanData->sendBeanState != BEAN_TR_ERR
           && pBeanData->sendBeanState != BEAN_NO_TR_DATA_PRESENT;

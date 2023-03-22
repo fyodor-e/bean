@@ -14,7 +14,7 @@ extern "C" {
 
 #define BEANBUFFSIZE 17   // 13 (Data + Header) + ML + CRC + EOM + RSP = 17
     // When more than BEAN_NOT_COND ticks passed it means that transfer terminated
-#define BEAN_NO_TR_COND          7
+#define BEAN_NO_TR_COND          9
 
 typedef enum {
     BEAN_NO_TR,             // Should be first to equal to 0

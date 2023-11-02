@@ -61,6 +61,19 @@ protected:
     return beanTransfer.byteTr < beanTransfer.dataSize;
   }
 
+  void initBeanTransfer(BeanTransfer *pbeanTransfer, unsigned char *data, unsigned char size)
+  {
+    pbeanTransfer->pData = data;
+    // byteTr and bitTr should be set to 0 to init transfer. See getNextData
+    pbeanTransfer->byteTr = 0;
+    pbeanTransfer->bitTr = 0;
+    pbeanTransfer->bean = 0;
+    // staffing bit should be sent first
+    pbeanTransfer->cnt = 0;
+    pbeanTransfer->trInPr = 0;
+    pbeanTransfer->dataSize = size;
+  }
+
   virtual void SetUp()
   {
     resetRecBuffer(&beanData);
@@ -94,17 +107,9 @@ TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_When_More_Than_BEAN_NO_TR_COND_bits_
 
 TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
 {
-  unsigned char data[] = {0b00010100, 0b10010010, 0b00010001, 0b00010001, 0b00100010, 0b00110011, 0b01111110, 0x01000000};
+  unsigned char data[] = {0b00010100, 0b10010010, 0b00010001, 0b00010001, 0b00100010, 0b00110011, 0b01111110, 0b01000000};
   BeanTransfer beanTransfer;
-  beanTransfer.pData = data;
-  // byteTr and bitTr should be set to 0 to init transfer. See getNextData
-  beanTransfer.byteTr = 0;
-  beanTransfer.bitTr = 0;
-  beanTransfer.bean = 0;
-  // staffing bit should be sent first
-  beanTransfer.cnt = 0;
-  beanTransfer.trInPr = 0;
-  beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
   beanData.recBeanState = BEAN_NO_TR;
 
   //while (getNextData(beanTransfer))
@@ -156,17 +161,9 @@ TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
 
 TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
 {
-  unsigned char data[] = {0b00010100, 0b00010000, 0b00000001, 0b00011111, 0b11100010, 0b10111111, 0b01111110, 0x01000000};
+  unsigned char data[] = {0b00010100, 0b00010000, 0b00000001, 0b00011111, 0b11100010, 0b10111111, 0b01111110, 0b01000000};
   BeanTransfer beanTransfer;
-  beanTransfer.pData = data;
-  // byteTr and bitTr should be set to 0 to init transfer. See getNextData
-  beanTransfer.byteTr = 0;
-  beanTransfer.bitTr = 0;
-  beanTransfer.bean = 0;
-  // staffing bit should be sent first
-  beanTransfer.cnt = 0;
-  beanTransfer.trInPr = 0;
-  beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
   beanData.recBeanState = BEAN_NO_TR;
 
   while (getNextData(beanTransfer))
@@ -186,17 +183,9 @@ TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
 
 TEST_F(BeanTestClass, Should_Accept_Transfer_With_00andFF)
 {
-  unsigned char data[] = {0x06, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0x42, 0b01111110, 0x01000000};
+  unsigned char data[] = {0x06, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0x42, 0b01111110, 0b01000000};
   BeanTransfer beanTransfer;
-  beanTransfer.pData = data;
-  // byteTr and bitTr should be set to 0 to init transfer. See getNextData
-  beanTransfer.byteTr = 0;
-  beanTransfer.bitTr = 0;
-  beanTransfer.bean = 0;
-  // staffing bit should be sent first
-  beanTransfer.cnt = 0;
-  beanTransfer.trInPr = 0;
-  beanTransfer.dataSize = sizeof(data) / sizeof(unsigned char);
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
   beanData.recBeanState = BEAN_NO_TR;
 
   while (getNextData(beanTransfer))
@@ -214,6 +203,44 @@ TEST_F(BeanTestClass, Should_Accept_Transfer_With_00andFF)
   EXPECT_EQ(beanData.buffer[7], data[7]);
   EXPECT_EQ(beanData.buffer[8], data[8]);
   EXPECT_EQ(beanData.buffer[9], data[9]);
+}
+
+TEST_F(BeanTestClass, Transfer_more_than_BEANBUFFSIZE)
+{
+  unsigned char data[] = {0b00010100, 0x92, 0x11, 0x11, 0x22, 0x33, 0x11, 0x11, 0x22, 0x33, 0x11, 0x11, 0x22, 0x33, 0x11, 0x11, 0x22, 0x33, 0b01111110, 0b01000000};
+  BeanTransfer beanTransfer;
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
+  beanData.recBeanState = BEAN_NO_TR;
+
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+
+  EXPECT_EQ(beanData.recBufferFull, 0);
+
+  EXPECT_EQ(beanData.recBuffPos, BEANBUFFSIZE);
+  EXPECT_EQ(beanData.recBeanState, BEAN_TR_ERR);
+  EXPECT_EQ(beanData.recBit, 7);
+}
+
+TEST_F(BeanTestClass, Should_Not_accept_any_transfer_when_in_BEAN_TR_ERR)
+{
+  unsigned char data[] = {0b00010100, 0x92, 0x11, 0x11, 0b01111110, 0b01000000};
+  BeanTransfer beanTransfer;
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
+  beanData.recBeanState = BEAN_TR_ERR;
+
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+
+  EXPECT_EQ(beanData.intBuffer[0], 0);
+  EXPECT_EQ(beanData.intBuffer[1], 0);
+  EXPECT_EQ(beanData.intBuffer[2], 0);
+  EXPECT_EQ(beanData.buffer[0], 0);
+  EXPECT_EQ(beanData.buffer[1], 0);
+  EXPECT_EQ(beanData.buffer[2], 0);
+  EXPECT_EQ(beanData.recBeanState, BEAN_TR_ERR);
+  EXPECT_EQ(beanData.recBuffPos, 0);
+  EXPECT_EQ(beanData.recBit, 7);
 }
 
 TEST_F(BeanTestClass, getCntFromTmr_test)

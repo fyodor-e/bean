@@ -1,1 +1,4 @@
 git submodule add -b release-1.8.0-2064-g703bd9ca https://github.com/google/googletest.git
+
+1. Add CMake tools extension from MS to VSCode
+2. Select compiler in bottom toolbar. Conpiler should be installed with Visual Studio 2017+

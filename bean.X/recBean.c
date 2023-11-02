@@ -12,6 +12,7 @@ void initRecBuffer(RecBeanData *pBeanData)
 
 void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
 {
+  // If there is no transfer cond - reset error and init buffers
   if (cnt >= BEAN_NO_TR_COND)
   {
     // Init buffer
@@ -28,7 +29,8 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
     return;
   }
 
-  if (cnt == 0) return;
+  // If transfer still in error condition - exit
+  if (cnt == 0 || pBeanData->recBeanState == BEAN_TR_ERR) return;
 
   // Use temp variable to define if next bit will be staffing
   // As we may decrease cnt by one on the next step
@@ -46,29 +48,21 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
     else return;
   }
 
-  // if (pBeanData->recBeanState == BEAN_TR_SOF)
-  // {
-  //   cnt--;
-  //   pBeanData->recBeanState = BEAN_TR_MLINPR;
-  // }
-
-  for (; cnt; cnt--)
+  // We should not receive more than BEANBUFFSIZE
+  for (; cnt && pBeanData->recBuffPos < BEANBUFFSIZE; cnt--)
   {
     pBeanData->intBuffer[pBeanData->recBuffPos] |= (bean << pBeanData->recBit);
 
     if (pBeanData->recBit == 0)
     {
-      // if (pBeanData->recBuffPos == 1) // We just got first byte. Set ByteCountInTr
-      // {
-      //   // pBeanData->recBytesCount = pBeanData->intBuffer[0] & 0b00001111;
-      //   pBeanData->recBeanState = BEAN_TR_ML;
-      // }
       pBeanData->recBit = 7;
       pBeanData->recBuffPos++;
     }
     else
       pBeanData->recBit--;
   }
+
+  if (pBeanData->recBuffPos >= BEANBUFFSIZE) pBeanData->recBeanState = BEAN_TR_ERR;
 }
 
 void resetRecBuffer(RecBeanData *pBeanData)

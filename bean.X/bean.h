@@ -83,7 +83,7 @@ void sendBean(SendBeanData* pBeanData);
 unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff);
 void resetSendBuffer(SendBeanData *pBeanData);
 void setSendError(SendBeanData *pBeanData);
-unsigned char resetSendError(SendBeanData *pBeanData);
+void resetSendError(SendBeanData *pBeanData, unsigned char beanIn, unsigned char cnt);
 unsigned char isTransferInProgress(SendBeanData *pBeanData);
 unsigned char canStartTransfer(BeanTransferState sendBeanState, BeanTransferState recBeanState);
 

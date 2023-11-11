@@ -119,12 +119,10 @@ void setSendError(SendBeanData *pBeanData) {
   pBeanData->bean = 0;
 }
 
-inline unsigned char resetSendError(SendBeanData *pBeanData) {
-  if (pBeanData->sendBeanState == BEAN_TR_ERR) {
+inline void resetSendError(SendBeanData *pBeanData, unsigned char beanIn, unsigned char cnt) {
+  if (pBeanData->sendBeanState == BEAN_TR_ERR && cnt >= BEAN_NO_TR_COND && !beanIn) {
     pBeanData->sendBeanState = BEAN_NO_TR_DATA_PRESENT;
-    return 1;
   }
-  return 0;
 }
 
 inline unsigned char isTransferInProgress(SendBeanData *pBeanData) {

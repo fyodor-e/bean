@@ -93,6 +93,23 @@ TEST_F(BeanTestClass, Should_reset_rec_bean_data)
   EXPECT_EQ(beanData.recBufferFull, 0);
 }
 
+TEST_F(BeanTestClass, Calling_initRecBuffer_twice_should_not_change_beanRecState)
+{
+  initRecBuffer(&beanData, 0);
+
+  EXPECT_EQ(beanData.intBuffer, beanData.recBuffer1);
+  EXPECT_EQ(beanData.buffer, beanData.recBuffer2);
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+  EXPECT_EQ(beanData.recBufferFull, 0);
+
+  initRecBuffer(&beanData, 0);
+
+  EXPECT_EQ(beanData.intBuffer, beanData.recBuffer1);
+  EXPECT_EQ(beanData.buffer, beanData.recBuffer2);
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+  EXPECT_EQ(beanData.recBufferFull, 0);
+}
+
 TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_When_More_Than_BEAN_NO_TR_COND_bits_got)
 {
   // In case of 0
@@ -241,6 +258,51 @@ TEST_F(BeanTestClass, Should_Not_accept_any_transfer_when_in_BEAN_TR_ERR)
   EXPECT_EQ(beanData.recBeanState, BEAN_TR_ERR);
   EXPECT_EQ(beanData.recBuffPos, 0);
   EXPECT_EQ(beanData.recBit, 7);
+}
+
+TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_immedeately_after_receiving_RSP)
+{
+  unsigned char data[] = {0x03, 0xAB, 0x12, 0x42, 0b01111110, 0b01000000};
+  BeanTransfer beanTransfer;
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
+  beanData.recBeanState = BEAN_NO_TR;
+
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+
+  // Buffer was rotated.
+  EXPECT_EQ(beanData.buffer[0], data[0]);
+  EXPECT_EQ(beanData.buffer[1], data[1]);
+  EXPECT_EQ(beanData.buffer[2], data[2]);
+  EXPECT_EQ(beanData.buffer[3], data[3]);
+  EXPECT_EQ(beanData.buffer[4], data[4]);
+  EXPECT_EQ(beanData.buffer[5], data[5]);
+
+  EXPECT_EQ(beanData.recBufferFull, 1);
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+}
+
+TEST_F(BeanTestClass, Should_NOT_Set_BEAN_NO_TR_if_EOM_is_not_received_or_corrupted)
+{
+  // data contains incorrect EOM
+  unsigned char data[] = {0x03, 0xAB, 0x12, 0x42, 0b01110110, 0b01000000};
+  BeanTransfer beanTransfer;
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
+  beanData.recBeanState = BEAN_NO_TR;
+
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+
+  // Buffer was not rotated as receive still in progress
+  EXPECT_EQ(beanData.intBuffer[0], data[0]);
+  EXPECT_EQ(beanData.intBuffer[1], data[1]);
+  EXPECT_EQ(beanData.intBuffer[2], data[2]);
+  EXPECT_EQ(beanData.intBuffer[3], data[3]);
+  EXPECT_EQ(beanData.intBuffer[4], data[4]);
+  EXPECT_EQ(beanData.intBuffer[5], data[5]);
+
+  EXPECT_EQ(beanData.recBufferFull, 0);
+  EXPECT_EQ(beanData.recBeanState, BEAN_TR_IN_PR);
 }
 
 TEST_F(BeanTestClass, getCntFromTmr_test)

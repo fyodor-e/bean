@@ -1,9 +1,13 @@
 #include "bean.h"
 #include <string.h>
 
-void initRecBuffer(RecBeanData *pBeanData, unsigned char isError)
+void initRecBuffer(RecBeanData *pBeanData, unsigned char isError, unsigned char isEOM)
 {
   if (!isError) {
+    if (pBeanData->recBeanState == BEAN_TR_GOT_EOM) {
+      if (!isEOM) pBeanData->recBeanState = BEAN_NO_TR;
+      return;
+    }
     if (pBeanData->recBeanState == BEAN_NO_TR) return;
 
     // Rotate buffer
@@ -17,8 +21,10 @@ void initRecBuffer(RecBeanData *pBeanData, unsigned char isError)
     memset(pBeanData->intBuffer, 0, BEANBUFFSIZE);
     pBeanData->recBit = 7;
     pBeanData->recBuffPos = 0;
-    pBeanData->recBeanState = BEAN_NO_TR;
+    pBeanData->recBeanState = isEOM ? BEAN_TR_GOT_EOM : BEAN_NO_TR;
     pBeanData->recIsNextBitStaffing = 0;
+    // Always set to full event if previous reception was erroneous
+    // PC app will get erroneous reception to display it to user
     pBeanData->recBufferFull = 1;
   } else {
     if (pBeanData->recBeanState == BEAN_TR_ERR) return;
@@ -33,7 +39,7 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
   if (cnt >= BEAN_NO_TR_COND)
   {
     // Error condition if bean is high during No Transfer Condition
-    initRecBuffer(pBeanData, bean);
+    initRecBuffer(pBeanData, bean, 0);
     return;
   }
 
@@ -46,14 +52,16 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
   if (pBeanData->recIsNextBitStaffing && cnt < 6) cnt--;
   pBeanData->recIsNextBitStaffing = newNextBitStaffing;
 
-
-  if (pBeanData->recBeanState == BEAN_NO_TR)
+  if (pBeanData->recBeanState == BEAN_NO_TR || pBeanData->recBeanState == BEAN_TR_GOT_EOM)
   {
     if (bean == 1) {
       pBeanData->recBeanState = BEAN_TR_IN_PR;
       cnt--; // We won't write SOF
     }
-    else return;
+    else {
+      pBeanData->recIsNextBitStaffing = 0;
+      return;
+    }
   }
 
   // We should not receive more than BEANBUFFSIZE
@@ -74,17 +82,17 @@ void recBean(RecBeanData *pBeanData, char bean, unsigned char cnt)
   if (pBeanData->recBuffPos > 0
     // Whole message was received + CRC and RSP.
     // We're receiving EOM
-    && (pBeanData->intBuffer[0] & 0x0F) + 2 == pBeanData->recBuffPos
+    && (pBeanData->intBuffer[0] & 0x0F) + 3 == pBeanData->recBuffPos
     // We're on EOF
     && pBeanData->recBit == 5
     // We've got EOM
     && pBeanData->intBuffer[pBeanData->recBuffPos - 1] == 0x7E
     // And RSP
     && pBeanData->intBuffer[pBeanData->recBuffPos] == 0x40) {
-    initRecBuffer(pBeanData, 0);
+    initRecBuffer(pBeanData, 0, 1);
   }
 
-  if (pBeanData->recBuffPos >= BEANBUFFSIZE) pBeanData->recBeanState = BEAN_TR_ERR;
+  if (pBeanData->recBuffPos >= BEANBUFFSIZE) initRecBuffer(pBeanData, 1, 0);
 }
 
 void resetRecBuffer(RecBeanData *pBeanData)

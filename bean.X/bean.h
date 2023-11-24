@@ -20,15 +20,12 @@ typedef enum {
     BEAN_NO_TR,             // Should be first to equal to 0
     BEAN_NO_TR_DATA_PRESENT, // Np transfer in progress but data has been loaded to tr buffer
     BEAN_TR_IN_PR,
+
     BEAN_TR_SOF,       // We are just got SOF and some part of ML.
-    BEAN_TR_MLINPR,
-    BEAN_TR_ML,       // We are getting ML
-    BEAN_TR_DSTID,
-    BEAN_TR_MESID,
-    BEAN_TR_DATA,
-    BEAN_TR_CRC8,
-    BEAN_TR_EOM,
-    BEAN_TR_RSP,
+
+    BEAN_TR_GOT_EOM,  // Got EOM message.
+                      // It marks end of transfer and buffers get swapped
+                      // but new transfer from out side is not allowed
 
     BEAN_TR_ERR = 0x81,
     BEAN_TR_CRCERR = 0x82,

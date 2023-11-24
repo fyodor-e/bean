@@ -95,14 +95,14 @@ TEST_F(BeanTestClass, Should_reset_rec_bean_data)
 
 TEST_F(BeanTestClass, Calling_initRecBuffer_twice_should_not_change_beanRecState)
 {
-  initRecBuffer(&beanData, 0);
+  initRecBuffer(&beanData, 0, 0);
 
   EXPECT_EQ(beanData.intBuffer, beanData.recBuffer1);
   EXPECT_EQ(beanData.buffer, beanData.recBuffer2);
   EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
   EXPECT_EQ(beanData.recBufferFull, 0);
 
-  initRecBuffer(&beanData, 0);
+  initRecBuffer(&beanData, 0, 0);
 
   EXPECT_EQ(beanData.intBuffer, beanData.recBuffer1);
   EXPECT_EQ(beanData.buffer, beanData.recBuffer2);
@@ -112,14 +112,25 @@ TEST_F(BeanTestClass, Calling_initRecBuffer_twice_should_not_change_beanRecState
 
 TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_When_More_Than_BEAN_NO_TR_COND_bits_got)
 {
-  // In case of 0
-  beanData.recBeanState = BEAN_TR_DATA;
+  beanData.recBeanState = BEAN_TR_IN_PR;
   recBean(&beanData, 0, BEAN_NO_TR_COND);
   EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
 
-  beanData.recBeanState = BEAN_TR_DATA;
+  beanData.recBeanState = BEAN_TR_IN_PR;
   recBean(&beanData, 1, BEAN_NO_TR_COND);
   EXPECT_EQ(beanData.recBeanState, BEAN_TR_ERR);
+}
+
+TEST_F(BeanTestClass, Switch_to_BEAN_TR_GOT_EOM_then_to_BEAN_NO_TR)
+{
+  beanData.recBeanState = BEAN_TR_IN_PR;
+  initRecBuffer(&beanData, 0, 1);
+
+  EXPECT_EQ(beanData.recBeanState, BEAN_TR_GOT_EOM);
+
+  initRecBuffer(&beanData, 0, 0);
+
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
 }
 
 TEST_F(BeanTestClass, Should_Accept_Simple_Transfer_WO_Staffing)
@@ -198,6 +209,29 @@ TEST_F(BeanTestClass, Should_Accept_Transfer_With_Staffing)
   EXPECT_EQ(beanData.buffer[7], data[7]);
 }
 
+TEST_F(BeanTestClass, Should_Accept_Transfer_in_BEAN_TR_GOT_EOM)
+{
+  unsigned char data[] = {0x14, 0x13, 0x51, 0x2F, 0x12, 0xBF, 0x7E, 0x40};
+  BeanTransfer beanTransfer;
+  initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
+  beanData.recBeanState = BEAN_TR_GOT_EOM;
+
+  while (getNextData(beanTransfer))
+    recBean(&beanData, beanTransfer.bean, beanTransfer.cnt);
+  recBean(&beanData, 0, BEAN_NO_TR_COND);
+
+  EXPECT_EQ(beanData.recBufferFull, 1);
+  EXPECT_EQ(beanData.buffer[0], data[0]);
+  EXPECT_EQ(beanData.buffer[1], data[1]);
+  EXPECT_EQ(beanData.buffer[2], data[2]);
+  EXPECT_EQ(beanData.buffer[3], data[3]);
+  EXPECT_EQ(beanData.buffer[4], data[4]);
+  EXPECT_EQ(beanData.buffer[5], data[5]);
+  EXPECT_EQ(beanData.buffer[6], data[6]);
+  EXPECT_EQ(beanData.buffer[7], data[7]);
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+}
+
 TEST_F(BeanTestClass, Should_Accept_Transfer_With_00andFF)
 {
   unsigned char data[] = {0x06, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0x42, 0b01111110, 0b01000000};
@@ -260,9 +294,12 @@ TEST_F(BeanTestClass, Should_Not_accept_any_transfer_when_in_BEAN_TR_ERR)
   EXPECT_EQ(beanData.recBit, 7);
 }
 
-TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_immedeately_after_receiving_RSP)
+// EOM
+
+TEST_F(BeanTestClass, Should_Set_BEAN_TR_GOT_EOM_immedeately_after_receiving_RSP)
 {
-  unsigned char data[] = {0x03, 0xAB, 0x12, 0x42, 0b01111110, 0b01000000};
+  unsigned char data[] = {0x24, 19, 215, 128, 0, 29, 0x7E, 0x40};
+  // unsigned char data[] = {0x03, 0xAB, 0x12, 0x42, 0b01111110, 0b01000000};
   BeanTransfer beanTransfer;
   initBeanTransfer(&beanTransfer, data, sizeof(data) / sizeof(unsigned char));
   beanData.recBeanState = BEAN_NO_TR;
@@ -279,10 +316,10 @@ TEST_F(BeanTestClass, Should_Set_BEAN_NO_TR_immedeately_after_receiving_RSP)
   EXPECT_EQ(beanData.buffer[5], data[5]);
 
   EXPECT_EQ(beanData.recBufferFull, 1);
-  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+  EXPECT_EQ(beanData.recBeanState, BEAN_TR_GOT_EOM);
 }
 
-TEST_F(BeanTestClass, Should_NOT_Set_BEAN_NO_TR_if_EOM_is_not_received_or_corrupted)
+TEST_F(BeanTestClass, Should_NOT_Set_BEAN_TR_GOT_EOM_if_EOM_is_not_received_or_corrupted)
 {
   // data contains incorrect EOM
   unsigned char data[] = {0x03, 0xAB, 0x12, 0x42, 0b01110110, 0b01000000};
@@ -304,6 +341,29 @@ TEST_F(BeanTestClass, Should_NOT_Set_BEAN_NO_TR_if_EOM_is_not_received_or_corrup
   EXPECT_EQ(beanData.recBufferFull, 0);
   EXPECT_EQ(beanData.recBeanState, BEAN_TR_IN_PR);
 }
+
+TEST_F(BeanTestClass, Should_ignore_0_in_BEAN_NO_TR)
+{
+  beanData.recBeanState = BEAN_NO_TR;
+
+  recBean(&beanData, 0, 3);
+
+  EXPECT_EQ(beanData.recBeanState, BEAN_NO_TR);
+  EXPECT_EQ(beanData.intBuffer[0], 0);
+  EXPECT_EQ(beanData.recIsNextBitStaffing, 0);
+}
+
+TEST_F(BeanTestClass, Should_ignore_0_in_BEAN_TR_GOT_EOM)
+{
+  beanData.recBeanState = BEAN_TR_GOT_EOM;
+
+  recBean(&beanData, 0, 3);
+
+  EXPECT_EQ(beanData.recBeanState, BEAN_TR_GOT_EOM);
+  EXPECT_EQ(beanData.intBuffer[0], 0);
+  EXPECT_EQ(beanData.recIsNextBitStaffing, 0);
+}
+
 
 TEST_F(BeanTestClass, getCntFromTmr_test)
 {

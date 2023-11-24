@@ -96,7 +96,7 @@ unsigned char initSendBeanData(SendBeanData *pBeanData, unsigned char *buff)
   if (pBeanData->sendBeanState != BEAN_NO_TR) return 0;
   resetSendBuffer(pBeanData);
   // Add 1 byte for ML and one for CRC
-  memcpy(pBeanData->sendBuffer, buff, (buff[0] & 0x0F) + 2);
+  memcpy(pBeanData->sendBuffer, buff, (buff[0] & 0x0F) + 3);
   pBeanData->sendBeanState = BEAN_NO_TR_DATA_PRESENT;
   return 1;
 }

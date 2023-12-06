@@ -5,6 +5,10 @@ void sendBean(SendBeanData *pBeanData)
 {
   pBeanData->cnt = 0;
 
+  if (pBeanData->sendBeanState != BEAN_NO_TR_DATA_PRESENT && pBeanData->sendBeanState != BEAN_TR_SOF) {
+    return;
+  }
+
   if (pBeanData->sendBeanState == BEAN_NO_TR_DATA_PRESENT)
   {
     pBeanData->bean = 1; // Send SOF
@@ -121,14 +125,12 @@ void setSendError(SendBeanData *pBeanData) {
 
 inline void resetSendError(SendBeanData *pBeanData, unsigned char beanIn, unsigned char cnt) {
   if (pBeanData->sendBeanState == BEAN_TR_ERR && cnt >= BEAN_NO_TR_COND && !beanIn) {
-    pBeanData->sendBeanState = BEAN_NO_TR_DATA_PRESENT;
+    pBeanData->sendBeanState = BEAN_NO_TR;
   }
 }
 
 inline unsigned char isTransferInProgress(SendBeanData *pBeanData) {
-  return pBeanData->sendBeanState != BEAN_NO_TR
-          && pBeanData->sendBeanState != BEAN_TR_ERR
-          && pBeanData->sendBeanState != BEAN_NO_TR_DATA_PRESENT;
+  return pBeanData->sendBeanState == BEAN_TR_SOF;
 }
 
 unsigned char canStartTransfer(BeanTransferState sendBeanState, BeanTransferState recBeanState)

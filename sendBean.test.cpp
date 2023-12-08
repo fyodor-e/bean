@@ -55,6 +55,16 @@ TEST_F(SendBeanTestClass, Should_NOT_alter_Send_Bean_data_if_sendBeanState_is_no
   EXPECT_EQ(beanData.sendBeanState, BEAN_TR_SOF);
 }
 
+TEST_F(SendBeanTestClass, Should_NOT_start_send_if_state_is_BEAN_NO_TR)
+{
+  beanData.sendBeanState = BEAN_NO_TR;
+  beanData.sendBuffer[0] = 0xAA;
+  sendBean(&beanData);
+
+  EXPECT_EQ(beanData.cnt, 0);
+  EXPECT_EQ(beanData.sendBeanState, BEAN_NO_TR);
+}
+
 TEST_F(SendBeanTestClass, Should_send_bean_data)
 {
   sendBean(&beanData);
